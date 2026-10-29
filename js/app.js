@@ -1,241 +1,250 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const state = {
-    currentSeriesId: "anatomia-general",
-    showLabels: true,
-    quizMode: false,
-    customMarkers: []
-  };
+document.addEventListener('DOMContentLoaded', () => {
+  let currentViewKey = 'vestibular';
+  let activeStructures = new Set();
+  let labelsVisible = true;
+  let quizActive = false;
+  let quizTarget = null;
+  let quizHits = 0;
+  let quizTotal = 0;
 
-  const svgLayer = document.getElementById("svg-layer");
-  const leaderSvg = document.getElementById("leader-lines-svg");
-  const labelsLayer = document.getElementById("labels-layer");
-  const layersSwitchList = document.getElementById("layers-switch-list");
-  const thumbnailsBar = document.getElementById("thumbnails-bar");
-  const headerSeriesName = document.getElementById("header-series-name");
-  const sidebarSeriesBadge = document.getElementById("sidebar-series-badge");
+  // Referencias del DOM
+  const svgStage = document.getElementById('svg-stage');
+  const structureListEl = document.getElementById('structure-list');
+  const seriesTitleEl = document.getElementById('current-series-title');
+  const sidebarBadgeEl = document.getElementById('sidebar-badge');
+  const btnToggleAll = document.getElementById('btn-toggle-all');
+  const btnLabels = document.getElementById('btn-labels');
+  const infoNameEl = document.getElementById('info-name');
+  const infoDescEl = document.getElementById('info-description');
+  const infoDotEl = document.getElementById('info-dot');
 
-  // Tarjeta de información inferior
-  const infoDot = document.getElementById("info-dot");
-  const infoTitle = document.getElementById("info-title");
-  const infoDesc = document.getElementById("info-desc");
+  // Inicializar vista por defecto
+  function loadView(viewKey) {
+    currentViewKey = viewKey;
+    const viewData = DENTAL_VIEWS[viewKey];
 
-  // Obtener serie actual
-  function getCurrentSeries() {
-    return DIENTECITOS_DATA.series.find(s => s.id === state.currentSeriesId);
+    seriesTitleEl.textContent = viewData.title;
+    sidebarBadgeEl.textContent = viewData.badge;
+    infoNameEl.textContent = viewData.defaultName;
+    infoDescEl.textContent = viewData.defaultDesc;
+    infoDotEl.style.background = '#10b981';
+
+    // Inyectar SVG
+    svgStage.innerHTML = ILLUSTRATIONS[viewKey];
+
+    // Activar todas las estructuras por defecto
+    activeStructures = new Set(viewData.structures.map(s => s.id));
+    renderSidebarList(viewData.structures);
+    bindSvgEvents(viewData);
+    syncLabelsVisibility();
   }
 
-  // 1. Renderizar Miniaturas de la Galería Inferior (Estilo IMAIOS)
-  function renderThumbnails() {
-    thumbnailsBar.innerHTML = "";
-    DIENTECITOS_DATA.series.forEach((series) => {
-      const card = document.createElement("div");
-      card.className = `thumb-card ${series.id === state.currentSeriesId ? "active" : ""}`;
-      card.innerHTML = `
-        <span class="thumb-preview">${series.icon}</span>
-        <span class="thumb-title">${series.title}</span>
-      `;
-      card.addEventListener("click", () => {
-        state.currentSeriesId = series.id;
-        renderThumbnails();
-        loadSeriesWorkspace();
-      });
-      thumbnailsBar.appendChild(card);
-    });
-  }
+  // Renderizar lista lateral de estructuras con su switch
+  function renderSidebarList(structures) {
+    structureListEl.innerHTML = '';
 
-  // 2. Cargar Workspace de la Serie
-  function loadSeriesWorkspace() {
-    const series = getCurrentSeries();
-    headerSeriesName.textContent = `${series.title} (${series.subtitle})`;
-    sidebarSeriesBadge.textContent = series.title;
+    structures.forEach(item => {
+      const isOn = activeStructures.has(item.id);
+      const li = document.createElement('li');
+      li.className = 'structure-item';
+      li.dataset.structure = item.id;
 
-    // Cargar SVG
-    svgLayer.innerHTML = DIENTECITOS_SVGS[series.svgKey] || "";
-
-    // Vincular eventos hover a zonas SVG
-    svgLayer.querySelectorAll(".anat-zone").forEach(zone => {
-      const structId = zone.getAttribute("data-id");
-      zone.addEventListener("mouseenter", () => highlightStructure(structId, true));
-      zone.addEventListener("mouseleave", () => highlightStructure(structId, false));
-    });
-
-    renderStructureSwitches(series);
-    renderLeaderLinesAndLabels(series);
-  }
-
-  // 3. Renderizar Interruptores de Capas en el Panel Derecho (Estilo IMAIOS)
-  function renderStructureSwitches(series) {
-    layersSwitchList.innerHTML = "";
-    series.structures.forEach(st => {
-      const row = document.createElement("div");
-      row.className = "layer-switch-row";
-      row.innerHTML = `
-        <span style="border-left: 3px solid ${st.color}; padding-left: 6px;">${st.name}</span>
-        <label class="switch">
-          <input type="checkbox" checked data-id="${st.id}">
-          <span class="slider-round"></span>
-        </label>
+      li.innerHTML = `
+        <div class="structure-label">
+          <span class="color-bar" style="background: ${item.color}"></span>
+          <span>${item.name}</span>
+        </div>
+        <div class="toggle-switch ${isOn ? 'on' : ''}"></div>
       `;
 
-      const checkbox = row.querySelector("input");
-      checkbox.addEventListener("change", () => {
-        renderLeaderLinesAndLabels(series);
+      // Clic para activar/desactivar etiqueta individual
+      li.addEventListener('click', () => {
+        if (activeStructures.has(item.id)) {
+          activeStructures.delete(item.id);
+        } else {
+          activeStructures.add(item.id);
+        }
+        renderSidebarList(structures);
+        syncLabelsVisibility();
       });
 
-      layersSwitchList.appendChild(row);
+      // Hover en el menú resalta la parte en el diente
+      li.addEventListener('mouseenter', () => highlightStructure(item.id, true));
+      li.addEventListener('mouseleave', () => highlightStructure(item.id, false));
+
+      structureListEl.appendChild(li);
+    });
+
+    btnToggleAll.textContent =
+      activeStructures.size === structures.length ? 'Deseleccionar todo' : 'Seleccionar todo';
+  }
+
+  // Sincronizar qué etiquetas se ven en el SVG
+  function syncLabelsVisibility() {
+    const callouts = svgStage.querySelectorAll('.callout-group');
+    callouts.forEach(group => {
+      const id = group.dataset.structure;
+      const shouldShow = labelsVisible && !quizActive && activeStructures.has(id);
+      group.classList.toggle('hidden-label', !shouldShow);
     });
   }
 
-  // 4. Renderizar Líneas Directrices y Etiquetas en la Pizarra
-  function renderLeaderLinesAndLabels(series) {
-    leaderSvg.innerHTML = "";
-    labelsLayer.innerHTML = "";
+  // Resaltar estructura y actualizar tarjeta inferior
+  function highlightStructure(structureId, isEntering) {
+    const viewData = DENTAL_VIEWS[currentViewKey];
+    const structObj = viewData.structures.find(s => s.id === structureId);
 
-    if (!state.showLabels) return;
+    const regions = svgStage.querySelectorAll(`.anat-region[data-structure="${structureId}"]`);
+    regions.forEach(r => r.classList.toggle('highlighted', isEntering));
 
-    // Obtener qué estructuras están activas mediante los switches
-    const activeCheckboxes = {};
-    layersSwitchList.querySelectorAll("input[type='checkbox']").forEach(cb => {
-      activeCheckboxes[cb.getAttribute("data-id")] = cb.checked;
-    });
+    const listItem = structureListEl.querySelector(`.structure-item[data-structure="${structureId}"]`);
+    if (listItem) listItem.classList.toggle('active-hover', isEntering);
 
-    series.structures.forEach(st => {
-      if (activeCheckboxes[st.id] === false) return;
-
-      // Línea guía
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "leader-group");
-      g.setAttribute("data-id", st.id);
-
-      const elbowX = st.side === "left" ? st.pinX - 110 : st.pinX + 110;
-      const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-      polyline.setAttribute("class", "leader-polyline");
-      polyline.setAttribute("points", `${st.pinX + (st.side === "left" ? -110 : 110)},${st.pinY} ${st.pinX},${st.pinY}`);
-      polyline.setAttribute("stroke", st.color);
-
-      const pinCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      pinCircle.setAttribute("class", "leader-pin");
-      pinCircle.setAttribute("cx", st.pinX);
-      pinCircle.setAttribute("cy", st.pinY);
-      pinCircle.setAttribute("r", 5.5);
-      pinCircle.setAttribute("fill", st.color);
-
-      g.appendChild(polyline);
-      g.appendChild(pinCircle);
-      leaderSvg.appendChild(g);
-
-      // Etiqueta HTML
-      const badge = document.createElement("div");
-      badge.className = "board-label";
-      badge.setAttribute("data-id", st.id);
-      badge.style.left = `${st.side === "left" ? st.pinX - 120 : st.pinX + 120}px`;
-      badge.style.top = `${st.pinY}px`;
-      badge.style.setProperty("--item-color", st.color);
-
-      if (state.quizMode) {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "quiz-input";
-        input.placeholder = "Escribe parte...";
-        badge.appendChild(input);
-      } else {
-        badge.textContent = st.name;
-      }
-
-      badge.addEventListener("mouseenter", () => highlightStructure(st.id, true));
-      badge.addEventListener("mouseleave", () => highlightStructure(st.id, false));
-
-      labelsLayer.appendChild(badge);
-    });
-  }
-
-  // 5. Destacar Estructura (Hover Sincronizado IMAIOS)
-  function highlightStructure(structId, isActive) {
-    const series = getCurrentSeries();
-    const st = series.structures.find(s => s.id === structId);
-    if (!st) return;
-
-    // Zona SVG
-    svgLayer.querySelectorAll(".anat-zone").forEach(zone => {
-      if (zone.getAttribute("data-id") === structId && isActive) {
-        zone.style.setProperty("--item-color", st.color);
-        zone.classList.add("highlighted");
-      } else if (zone.getAttribute("data-id") === structId && !isActive) {
-        zone.classList.remove("highlighted");
-      }
-    });
-
-    // Líneas y Etiquetas
-    leaderSvg.querySelectorAll(".leader-group").forEach(group => {
-      const gid = group.getAttribute("data-id");
-      if (!isActive) group.classList.remove("active", "dimmed");
-      else if (gid === structId) { group.classList.add("active"); group.classList.remove("dimmed"); }
-      else { group.classList.add("dimmed"); group.classList.remove("active"); }
-    });
-
-    labelsLayer.querySelectorAll(".board-label").forEach(label => {
-      const lid = label.getAttribute("data-id");
-      if (!isActive) label.classList.remove("active", "dimmed");
-      else if (lid === structId) { label.classList.add("active"); label.classList.remove("dimmed"); }
-      else { label.classList.add("dimmed"); label.classList.remove("active"); }
-    });
-
-    // Tarjeta inferior
-    if (isActive) {
-      infoDot.style.backgroundColor = st.color;
-      infoTitle.textContent = st.name;
-      infoDesc.textContent = st.desc;
+    if (isEntering && structObj) {
+      infoNameEl.textContent = structObj.name;
+      infoDescEl.textContent = structObj.description;
+      infoDotEl.style.background = structObj.color;
     }
   }
 
-  // 6. Pestañas del Panel Derecho
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById(`tab-${btn.getAttribute("data-tab")}`).classList.add("active");
-    });
-  });
+  // Eventos sobre las partes del diente y etiquetas del SVG
+  function bindSvgEvents(viewData) {
+    const interactiveElements = svgStage.querySelectorAll('.anat-region, .callout-group');
 
-  // Botón Ocultar / Mostrar Etiquetas
-  document.getElementById("btn-toggle-labels").addEventListener("click", (e) => {
-    state.showLabels = !state.showLabels;
-    e.currentTarget.classList.toggle("active", state.showLabels);
-    renderLeaderLinesAndLabels(getCurrentSeries());
-  });
+    interactiveElements.forEach(el => {
+      const id = el.dataset.structure;
+      if (!id) return;
 
-  // Modo Quiz Toggle
-  document.getElementById("quiz-mode-toggle").addEventListener("change", (e) => {
-    state.quizMode = e.target.checked;
-    renderLeaderLinesAndLabels(getCurrentSeries());
-  });
+      el.addEventListener('mouseenter', () => highlightStructure(id, true));
+      el.addEventListener('mouseleave', () => highlightStructure(id, false));
 
-  // Galería Modal
-  const galleryModal = document.getElementById("gallery-modal");
-  document.getElementById("btn-toggle-gallery").addEventListener("click", () => {
-    const grid = document.getElementById("gallery-grid");
-    grid.innerHTML = "";
-    DIENTECITOS_DATA.series.forEach((s, idx) => {
-      const item = document.createElement("div");
-      item.className = "gallery-item";
-      item.innerHTML = `<span>${s.icon}</span><p>Img ${idx+1}: ${s.title}</p>`;
-      item.addEventListener("click", () => {
-        state.currentSeriesId = s.id;
-        galleryModal.classList.add("hidden");
-        renderThumbnails();
-        loadSeriesWorkspace();
+      el.addEventListener('click', () => {
+        if (quizActive) {
+          handleQuizAttempt(id);
+        } else {
+          highlightStructure(id, true);
+        }
       });
-      grid.appendChild(item);
     });
-    galleryModal.classList.remove("hidden");
+  }
+
+  // Botón Seleccionar / Deseleccionar todo
+  btnToggleAll.addEventListener('click', () => {
+    const structures = DENTAL_VIEWS[currentViewKey].structures;
+    if (activeStructures.size === structures.length) {
+      activeStructures.clear();
+    } else {
+      activeStructures = new Set(structures.map(s => s.id));
+    }
+    renderSidebarList(structures);
+    syncLabelsVisibility();
   });
 
-  document.getElementById("close-gallery").addEventListener("click", () => {
-    galleryModal.classList.add("hidden");
+  // Botón global de Etiquetas en la barra superior
+  btnLabels.addEventListener('click', () => {
+    labelsVisible = !labelsVisible;
+    btnLabels.classList.toggle('active', labelsVisible);
+    syncLabelsVisibility();
   });
 
-  // Inicializar
-  renderThumbnails();
-  loadSeriesWorkspace();
+  // Cambio de vistas (Miniaturas abajo a la izquierda)
+  document.querySelectorAll('.view-thumb').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-thumb').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadView(btn.dataset.view);
+    });
+  });
+
+  // Cambio de pestañas en el menú derecho
+  document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
+    });
+  });
+
+  // ================= PIZARRA DE DIBUJO =================
+  const canvas = document.getElementById('drawing-board');
+  const ctx = canvas.getContext('2d');
+  const btnDrawToggle = document.getElementById('btn-draw-toggle');
+  const btnClearBoard = document.getElementById('btn-clear-board');
+  const drawColorInput = document.getElementById('draw-color');
+  const drawSizeInput = document.getElementById('draw-size');
+  let drawingEnabled = false;
+  let isPainting = false;
+
+  function resizeCanvas() {
+    const area = document.getElementById('canvas-area');
+    canvas.width = area.clientWidth;
+    canvas.height = area.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  btnDrawToggle.addEventListener('click', () => {
+    drawingEnabled = !drawingEnabled;
+    canvas.classList.toggle('drawing-active', drawingEnabled);
+    btnDrawToggle.textContent = drawingEnabled ? '🛑 Desactivar Lápiz' : '✏️ Activar Lápiz';
+  });
+
+  btnClearBoard.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+
+  canvas.addEventListener('mousedown', e => {
+    if (!drawingEnabled) return;
+    isPainting = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    if (!drawingEnabled || !isPainting) return;
+    ctx.strokeStyle = drawColorInput.value;
+    ctx.lineWidth = drawSizeInput.value;
+    ctx.lineCap = 'round';
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isPainting = false;
+  });
+
+  // ================= MODO QUIZ =================
+  const btnStartQuiz = document.getElementById('btn-start-quiz');
+  const quizBanner = document.getElementById('quiz-banner');
+  const quizPrompt = document.getElementById('quiz-prompt');
+  const quizScore = document.getElementById('quiz-score');
+
+  btnStartQuiz.addEventListener('click', () => {
+    quizActive = !quizActive;
+    quizBanner.classList.toggle('hidden', !quizActive);
+    btnStartQuiz.textContent = quizActive ? '⏹️ Terminar Quiz' : '🎯 Iniciar Quiz Anatómico';
+    quizHits = 0;
+    quizTotal = 0;
+    syncLabelsVisibility();
+    if (quizActive) nextQuizQuestion();
+  });
+
+  function nextQuizQuestion() {
+    const structures = DENTAL_VIEWS[currentViewKey].structures;
+    quizTarget = structures[Math.floor(Math.random() * structures.length)];
+    quizPrompt.innerHTML = `Selecciona en el diente: <strong>${quizTarget.name}</strong>`;
+    quizScore.textContent = `Aciertos: ${quizHits}/${quizTotal}`;
+  }
+
+  function handleQuizAttempt(clickedId) {
+    quizTotal++;
+    if (clickedId === quizTarget.id) {
+      quizHits++;
+    }
+    nextQuizQuestion();
+  }
+
+  // Cargar la vista inicial
+  loadView('vestibular');
 });

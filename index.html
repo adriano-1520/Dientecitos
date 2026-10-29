@@ -3,150 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dientecitos | Atlas de Estomatología e-Anatomy</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <title>Dientecitos - Atlas de anatomía dental</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-
-  <!-- BARRA SUPERIOR (ESTILO IMAIOS) -->
+  <!-- BARRA SUPERIOR -->
   <header class="topbar">
     <div class="brand">
       <div class="brand-icon">🦷</div>
-      <div>
+      <div class="brand-text">
         <h1>Dientecitos</h1>
-        <p>Atlas Anatómico de Estomatología</p>
+        <span>Atlas de anatomía dental - Estomatología</span>
       </div>
     </div>
 
-    <!-- TÍTULO DE LA SERIE / VISTA ACTUAL -->
-    <div class="series-title-container">
-      <span class="series-label">Serie actual:</span>
-      <span id="header-series-name" class="series-name">Anatomía general (Vista vestibular)</span>
+    <div class="current-series-pill">
+      Serie actual: <strong id="current-series-title">Anatomía general (Vista vestibular)</strong>
     </div>
 
-    <!-- CONTROLES SUPERIORES -->
     <div class="topbar-actions">
-      <button id="btn-toggle-gallery" class="tool-btn highlight-btn" title="Ver galería de imágenes">
-        <span>🖼️</span> Galería (<span id="gallery-count">46</span>)
+      <button id="btn-gallery" class="btn-top" title="Alternar vista de cuadrícula">
+        <span>⊞</span> Galería ( 46 )
       </button>
-      <button id="btn-toggle-labels" class="tool-btn active" title="Mostrar u ocultar etiquetas">
-        <span>👁️</span> Etiquetas
+      <button id="btn-labels" class="btn-top active" title="Mostrar/Ocultar etiquetas">
+        <span>🏷️</span> Etiquetas
       </button>
-      <button id="btn-reset-board" class="tool-btn" title="Restaurar vista">
-        <span>🔄</span> Limpiar Pizarra
+      <button id="btn-clear-board" class="btn-top" title="Borrar trazos de la pizarra">
+        <span>🗑️</span> Limpiar Pizarra
       </button>
     </div>
   </header>
 
-  <!-- WORKSPACE PRINCIPAL -->
+  <!-- CONTENEDOR PRINCIPAL -->
   <main class="workspace">
-
-    <!-- PIZARRA CENTRAL (ÁREA DE VISUALIZACIÓN ANATÓMICA) -->
-    <section class="board-container">
-      <div class="board-stage" id="board-stage">
-        <div class="anatomy-viewport" id="anatomy-viewport">
-          <!-- 1. Capa de Ilustración SVG (Diente / Boca / ATM) -->
-          <div id="svg-layer" class="layer-svg"></div>
-
-          <!-- 2. Capa de Líneas Directrices y Pines (Estilo IMAIOS) -->
-          <svg id="leader-lines-svg" class="layer-lines" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
-
-          <!-- 3. Capa de Etiquetas Flotantes Interactivas -->
-          <div id="labels-layer" class="layer-labels"></div>
-        </div>
+    <!-- LIENZO CENTRAL DE ANATOMÍA -->
+    <section class="canvas-area" id="canvas-area">
+      <div class="svg-stage" id="svg-stage">
+        <!-- El SVG anatómico se inyecta dinámicamente desde js/illustrations.js -->
       </div>
 
-      <!-- BARRA DESLIZANTE INFERIOR DE MINIATURAS (ESTILO IMAIOS e-Anatomy) -->
-      <div class="thumbnails-bar" id="thumbnails-bar">
-        <!-- Generado dinámicamente desde app.js -->
+      <!-- Pizarra de dibujo superpuesta -->
+      <canvas id="drawing-board"></canvas>
+
+      <!-- Estado del modo Quiz flotante -->
+      <div id="quiz-banner" class="quiz-banner hidden">
+        <span id="quiz-prompt">Haz clic en la estructura: <strong>Corona</strong></span>
+        <span id="quiz-score">Aciertos: 0/0</span>
+      </div>
+
+      <!-- MINIATURAS DE VISTAS (Abajo a la izquierda) -->
+      <div class="view-switcher" id="view-switcher">
+        <button class="view-thumb active" data-view="vestibular">
+          <div class="thumb-icon">🦷</div>
+          <span>Anatomía general</span>
+        </button>
+        <button class="view-thumb" data-view="oclusal">
+          <div class="thumb-icon">👄</div>
+          <span>Cara oclusal</span>
+        </button>
+        <button class="view-thumb" data-view="arco">
+          <div class="thumb-icon">😁</div>
+          <span>Arco dental maxilar</span>
+        </button>
       </div>
     </section>
 
-    <!-- PANEL LATERAL DERECHO (MENÚ DE CAPAS Y ESTRUCTURAS) -->
-    <aside class="sidebar-right">
-      <div class="panel-header">
+    <!-- MENÚ LATERAL DERECHO -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
         <h2>Menú</h2>
-        <span class="badge-series" id="sidebar-series-badge">Anatomía general</span>
+        <span class="badge-series" id="sidebar-badge">Anatomía general</span>
       </div>
 
-      <!-- PESTAÑAS DEL PANEL LATERAL -->
-      <div class="panel-tabs">
-        <button class="tab-btn active" data-tab="structures">Estructuras</button>
-        <button class="tab-btn" data-tab="tools">Pizarra & Quiz</button>
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="estructuras">Estructuras</button>
+        <button class="tab-btn" data-tab="quiz">Pizarra &amp; Quiz</button>
       </div>
 
-      <!-- CONTENIDO DE ESTRUCTURAS (INTERRUPTORES ESTILO IMAIOS) -->
-      <div class="tab-content active" id="tab-structures">
-        <div class="control-group-header">
+      <!-- PESTAÑA 1: ESTRUCTURAS ANATÓMICAS -->
+      <div class="tab-content active" id="tab-estructuras">
+        <div class="structures-toolbar">
           <span>Estructuras anatómicas</span>
-          <button id="btn-toggle-all-layers" class="mini-text-btn">Seleccionar todo</button>
+          <button id="btn-toggle-all" class="link-btn">Deseleccionar todo</button>
         </div>
-        <div class="layers-switch-list" id="layers-switch-list">
-          <!-- Interruptores deslizantes generados dinámicamente -->
+
+        <ul class="structure-list" id="structure-list">
+          <!-- Generado dinámicamente desde js/data.js -->
+        </ul>
+      </div>
+
+      <!-- PESTAÑA 2: PIZARRA & QUIZ -->
+      <div class="tab-content" id="tab-quiz">
+        <div class="tool-section">
+          <h3>Pizarra Interactiva</h3>
+          <p class="tool-desc">Dibuja libremente sobre el atlas para señalar hallazgos clínicos o explicar en exposición.</p>
+          <div class="draw-controls">
+            <button id="btn-draw-toggle" class="btn-primary">✏️ Activar Lápiz</button>
+            <input type="color" id="draw-color" value="#d9381e" title="Color del lápiz" />
+            <input type="range" id="draw-size" min="2" max="12" value="4" title="Grosor" />
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="tool-section">
+          <h3>Modo Evaluación (Quiz)</h3>
+          <p class="tool-desc">Oculta las etiquetas y pon a prueba el reconocimiento de estructuras anatómicas.</p>
+          <button id="btn-start-quiz" class="btn-quiz">🎯 Iniciar Quiz Anatómico</button>
         </div>
       </div>
 
-      <!-- CONTENIDO DE HERRAMIENTAS / PIZARRA -->
-      <div class="tab-content" id="tab-tools">
-        <div class="tool-section">
-          <h3>Modo Quiz / Autoevaluación</h3>
-          <p class="tool-desc">Activa el modo quiz para ocultar los nombres y evaluar tus conocimientos escribiéndolos en la pizarra.</p>
-          <label class="toggle-switch-row">
-            <span>Modo Quiz</span>
-            <input type="checkbox" id="quiz-mode-toggle" />
-            <span class="slider"></span>
-          </label>
+      <!-- TARJETA INFORMATIVA INFERIOR -->
+      <div class="info-card" id="info-card">
+        <div class="info-title">
+          <span class="dot" id="info-dot"></span>
+          <h4 id="info-name">Molar Permanente (Vista Vestibular)</h4>
         </div>
-
-        <div class="tool-section">
-          <h3>Marcadores Personales</h3>
-          <p class="tool-desc">Haz clic en cualquier zona de la pizarra para agregar tus propias notas clínicas.</p>
-          <button id="btn-enable-pin-mode" class="btn-secondary-full">📍 Agregar Marcador</button>
-        </div>
-      </div>
-
-      <!-- TARJETA INFORMATIVA INFERIOR AL PASAR EL MOUSE -->
-      <div class="sidebar-info-card" id="sidebar-info-card">
-        <div class="info-header">
-          <span class="info-dot" id="info-dot"></span>
-          <h4 id="info-title">Selecciona una estructura</h4>
-        </div>
-        <p id="info-desc">Pasa el cursor o haz clic en cualquier nombre de la pizarra para ver su descripción detallada de Estomatología.</p>
+        <p id="info-description">
+          Pasa el cursor o haz clic sobre cualquier estructura o etiqueta anatómica para visualizar su descripción morfológica y clínica.
+        </p>
       </div>
     </aside>
-
   </main>
 
-  <!-- MODAL DE GALERÍA DE IMÁGENES (ESTILO IMAIOS) -->
-  <div id="gallery-modal" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Galería de Imágenes Anatómicas (46 Imágenes)</h3>
-        <button id="close-gallery" class="close-btn">&times;</button>
-      </div>
-      <div class="gallery-grid" id="gallery-grid">
-        <!-- Miniaturas de la galería -->
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL PARA NUEVO MARCADOR -->
-  <div id="pin-modal" class="modal hidden">
-    <div class="modal-card modal-small">
-      <h3>📍 Nuevo Marcador Estomatológico</h3>
-      <input type="text" id="pin-name-input" placeholder="Nombre de la estructura..." autocomplete="off" />
-      <textarea id="pin-desc-input" placeholder="Descripción clínica opcional..."></textarea>
-      <div class="modal-actions">
-        <button id="cancel-pin" class="btn-secondary">Cancelar</button>
-        <button id="save-pin" class="btn-primary">Guardar Punto</button>
-      </div>
-    </div>
-  </div>
-
   <script src="js/data.js"></script>
+  <script src="js/illustrations.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
