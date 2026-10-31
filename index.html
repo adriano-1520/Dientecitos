@@ -16,20 +16,18 @@
         <span>Atlas de anatomía dental - Estomatología</span>
       </div>
     </div>
-
     <div class="current-series-pill">
-      Serie actual: <strong id="current-series-title">Anatomía general (Vista vestibular)</strong>
+      Serie actual: <strong id="current-series-title">Diente - Anatomía general (Corte longitudinal)</strong>
     </div>
-
     <div class="topbar-actions">
       <button id="btn-gallery" class="btn-top" title="Alternar vista de cuadrícula">
-        <span>⊞</span> Galería ( 46 )
+        <span>🗂️</span> Galería ( 3 )
       </button>
       <button id="btn-labels" class="btn-top active" title="Mostrar/Ocultar etiquetas">
         <span>🏷️</span> Etiquetas
       </button>
       <button id="btn-clear-board" class="btn-top" title="Borrar trazos de la pizarra">
-        <span>🗑️</span> Limpiar Pizarra
+        <span>🧹</span> Limpiar Pizarra
       </button>
     </div>
   </header>
@@ -41,28 +39,25 @@
       <div class="svg-stage" id="svg-stage">
         <!-- El SVG anatómico se inyecta dinámicamente desde js/illustrations.js -->
       </div>
-
       <!-- Pizarra de dibujo superpuesta -->
       <canvas id="drawing-board"></canvas>
-
       <!-- Estado del modo Quiz flotante -->
       <div id="quiz-banner" class="quiz-banner hidden">
         <span id="quiz-prompt">Haz clic en la estructura: <strong>Corona</strong></span>
         <span id="quiz-score">Aciertos: 0/0</span>
       </div>
-
       <!-- MINIATURAS DE VISTAS (Abajo a la izquierda) -->
       <div class="view-switcher" id="view-switcher">
         <button class="view-thumb active" data-view="vestibular">
           <div class="thumb-icon">🦷</div>
-          <span>Anatomía general</span>
+          <span>Corte longitudinal</span>
         </button>
         <button class="view-thumb" data-view="oclusal">
-          <div class="thumb-icon">👄</div>
+          <div class="thumb-icon">🔍</div>
           <span>Cara oclusal</span>
         </button>
         <button class="view-thumb" data-view="arco">
-          <div class="thumb-icon">😁</div>
+          <div class="thumb-icon">👄</div>
           <span>Arco dental maxilar</span>
         </button>
       </div>
@@ -72,9 +67,8 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>Menú</h2>
-        <span class="badge-series" id="sidebar-badge">Anatomía general</span>
+        <span class="badge-series" id="sidebar-badge">Corte longitudinal</span>
       </div>
-
       <div class="sidebar-tabs">
         <button class="tab-btn active" data-tab="estructuras">Estructuras</button>
         <button class="tab-btn" data-tab="quiz">Pizarra &amp; Quiz</button>
@@ -86,7 +80,6 @@
           <span>Estructuras anatómicas</span>
           <button id="btn-toggle-all" class="link-btn">Deseleccionar todo</button>
         </div>
-
         <ul class="structure-list" id="structure-list">
           <!-- Generado dinámicamente desde js/data.js -->
         </ul>
@@ -103,9 +96,7 @@
             <input type="range" id="draw-size" min="2" max="12" value="4" title="Grosor" />
           </div>
         </div>
-
         <hr class="divider" />
-
         <div class="tool-section">
           <h3>Modo Evaluación (Quiz)</h3>
           <p class="tool-desc">Oculta las etiquetas y pon a prueba el reconocimiento de estructuras anatómicas.</p>
@@ -117,7 +108,7 @@
       <div class="info-card" id="info-card">
         <div class="info-title">
           <span class="dot" id="info-dot"></span>
-          <h4 id="info-name">Molar Permanente (Vista Vestibular)</h4>
+          <h4 id="info-name">Diente - Anatomía general (Corte longitudinal)</h4>
         </div>
         <p id="info-description">
           Pasa el cursor o haz clic sobre cualquier estructura o etiqueta anatómica para visualizar su descripción morfológica y clínica.
