@@ -1,33 +1,75 @@
 const DENTAL_VIEWS = {
   vestibular: {
-    title: 'Anatomía general (Vista vestibular)',
-    badge: 'Anatomía general',
-    defaultName: 'Molar Permanente (Vista Vestibular)',
-    defaultDesc: 'Diente posterior multirradicular diseñado para la trituración de alimentos. Presenta corona ancha con cúspides definidas, cuello cervical y raíces bifurcadas.',
+    title: 'Diente - Anatomía general (Corte longitudinal)',
+    badge: 'Corte longitudinal',
+    defaultName: 'Diente - Anatomía general (Corte longitudinal)',
+    defaultDesc: 'Sección longitudinal de un molar permanente que expone las capas mineralizadas (esmalte, dentina y cemento) junto con la cavidad pulpar coronaria y los conductos radiculares.',
     structures: [
+      {
+        id: 'cavidad-corona',
+        name: 'Cavidad de la corona',
+        color: '#b45309',
+        description: 'Cámara pulpar coronaria ubicada en el centro de la corona anatómica; aloja la pulpa coronal y presenta prolongaciones hacia las cúspides llamadas cuernos pulpares.'
+      },
+      {
+        id: 'esmalte',
+        name: 'Esmalte',
+        color: '#0284c7',
+        description: 'Tejido ectodérmico altamente mineralizado (96% hidroxiapatita) y translúcido que recubre y protege la corona anatómica del diente.'
+      },
+      {
+        id: 'dentina',
+        name: 'Dentina',
+        color: '#ca8a04',
+        description: 'Tejido conjuntivo mineralizado avascular que constituye el mayor volumen del diente, atravesado por millones de túbulos dentinarios microscópicos.'
+      },
+      {
+        id: 'conducto-radicular',
+        name: 'Conducto radicular',
+        color: '#9a3412',
+        description: 'Porción radicular de la cavidad pulpar que recorre longitudinalmente el centro de cada raíz desde el piso cameral hasta el foramen apical.'
+      },
+      {
+        id: 'foramen-apical',
+        name: 'Foramen apical del diente',
+        color: '#dc2626',
+        description: 'Abertura anatómica terminal situada en el ápex radicular por donde penetra el paquete vasculonervioso periodontal hacia la pulpa dental.'
+      },
       {
         id: 'apex-cuspide',
         name: 'Ápex de la cúspide',
-        color: '#0284c7',
+        color: '#2563eb',
         description: 'Punto más prominente o vértice superior de cada cúspide en la superficie oclusal de premolares y molares.'
       },
       {
         id: 'cuspide',
         name: 'Cúspide',
-        color: '#2563eb',
-        description: 'Elevación piramidal de esmalte en la corona clínica que divide la superficie oclusal y participa activamente en la masticación.'
+        color: '#1d4ed8',
+        description: 'Elevación piramidal de esmalte con base dentinaria en la cara oclusal que participa activamente en la trituración y oclusión.'
+      },
+      {
+        id: 'cresta-marginal',
+        name: 'Cresta marginal',
+        color: '#0d9488',
+        description: 'Elevación lineal redondeada de esmalte que limita los bordes mesial y distal de la superficie oclusal de premolares y molares.'
+      },
+      {
+        id: 'cresta-triangular',
+        name: 'Cresta triangular',
+        color: '#059669',
+        description: 'Prominencia de esmalte que desciende desde el ápex de una cúspide principal hacia el surco central de la cara oclusal.'
       },
       {
         id: 'corona',
         name: 'Corona',
-        color: '#0d9488',
-        description: 'Porción visible del diente recubierta por esmalte dental translúcido de alta mineralización, situada por encima de la línea cervical.'
+        color: '#0891b2',
+        description: 'Porción superior del diente recubierta por esmalte dental que se proyecta en la cavidad oral por encima de la línea cervical.'
       },
       {
-        id: 'diente',
-        name: 'Diente',
+        id: 'cara-oclusal',
+        name: 'Cara oclusal',
         color: '#4f46e5',
-        description: 'Órgano anatómico mineralizado completo compuesto por la unidad funcional de corona, cuello y sistema radicular.'
+        description: 'Superficie masticatoria activa de los dientes posteriores, conformada por cúspides, crestas, fosas y surcos de desarrollo.'
       },
       {
         id: 'cuello',
@@ -36,20 +78,31 @@ const DENTAL_VIEWS = {
         description: 'Unión amelocementaria (línea cervical). Zona de transición anatómica entre el esmalte de la corona y el cemento de la raíz.'
       },
       {
+        id: 'diente',
+        name: 'Diente',
+        color: '#6366f1',
+        description: 'Órgano anatómico mineralizado completo compuesto por la unidad funcional de corona, cuello, sistema radicular y complejo dentino-pulpar.'
+      },
+      {
+        id: 'cavidad-pulpar',
+        name: 'Cavidad pulpar',
+        color: '#c2410c',
+        description: 'Espacio interno central del diente delimitado por la dentina que aloja el tejido conectivo laxo vascularizado e inervado (pulpa dental).'
+      },
+      {
         id: 'raiz',
         name: 'Raíz del diente',
-        color: '#ca8a04',
-        description: 'Porción del diente recubierta por cemento que se aloja en el alvéolo dental maxilar o mandibular, sosteniendo la pieza mediante el ligamento periodontal.'
+        color: '#a16207',
+        description: 'Porción del diente recubierta por cemento que se aloja en el alvéolo óseo maxilar o mandibular mediante las fibras del ligamento periodontal.'
       },
       {
         id: 'apex-raiz',
         name: 'Ápex de la raíz',
-        color: '#b45309',
-        description: 'Extremo terminal de la raíz donde se ubica el foramen apical, por donde ingresa el paquete vasculonervioso hacia la pulpa.'
+        color: '#7c2d12',
+        description: 'Extremo terminal cónico de la raíz dental donde desemboca el conducto radicular a través del foramen apical.'
       }
     ]
   },
-
   oclusal: {
     title: 'Molar Permanente (Cara oclusal)',
     badge: 'Cara oclusal',
@@ -82,7 +135,6 @@ const DENTAL_VIEWS = {
       }
     ]
   },
-
   arco: {
     title: 'Arco Dental Maxilar (Vista Oclusal)',
     badge: 'Arco maxilar',

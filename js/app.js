@@ -14,20 +14,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const sidebarBadgeEl = document.getElementById('sidebar-badge');
   const btnToggleAll = document.getElementById('btn-toggle-all');
   const btnLabels = document.getElementById('btn-labels');
+  const btnGallery = document.getElementById('btn-gallery');
   const infoNameEl = document.getElementById('info-name');
   const infoDescEl = document.getElementById('info-description');
   const infoDotEl = document.getElementById('info-dot');
+  const canvas = document.getElementById('drawing-board');
+  const ctx = canvas.getContext('2d');
 
   // Inicializar vista por defecto
   function loadView(viewKey) {
     currentViewKey = viewKey;
     const viewData = DENTAL_VIEWS[viewKey];
-
     seriesTitleEl.textContent = viewData.title;
     sidebarBadgeEl.textContent = viewData.badge;
     infoNameEl.textContent = viewData.defaultName;
     infoDescEl.textContent = viewData.defaultDesc;
     infoDotEl.style.background = '#10b981';
+
+    // Limpiar trazos de la pizarra al cambiar de lámina
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Inyectar SVG
     svgStage.innerHTML = ILLUSTRATIONS[viewKey];
@@ -42,13 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Renderizar lista lateral de estructuras con su switch
   function renderSidebarList(structures) {
     structureListEl.innerHTML = '';
-
     structures.forEach(item => {
       const isOn = activeStructures.has(item.id);
       const li = document.createElement('li');
       li.className = 'structure-item';
       li.dataset.structure = item.id;
-
       li.innerHTML = `
         <div class="structure-label">
           <span class="color-bar" style="background: ${item.color}"></span>
@@ -93,9 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function highlightStructure(structureId, isEntering) {
     const viewData = DENTAL_VIEWS[currentViewKey];
     const structObj = viewData.structures.find(s => s.id === structureId);
-
     const regions = svgStage.querySelectorAll(`.anat-region[data-structure="${structureId}"]`);
     regions.forEach(r => r.classList.toggle('highlighted', isEntering));
+
+    const callouts = svgStage.querySelectorAll(`.callout-group[data-structure="${structureId}"]`);
+    callouts.forEach(c => c.classList.toggle('active-callout', isEntering));
 
     const listItem = structureListEl.querySelector(`.structure-item[data-structure="${structureId}"]`);
     if (listItem) listItem.classList.toggle('active-hover', isEntering);
@@ -108,16 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Eventos sobre las partes del diente y etiquetas del SVG
-  function bindSvgEvents(viewData) {
+  function bindSvgEvents() {
     const interactiveElements = svgStage.querySelectorAll('.anat-region, .callout-group');
-
     interactiveElements.forEach(el => {
       const id = el.dataset.structure;
       if (!id) return;
-
       el.addEventListener('mouseenter', () => highlightStructure(id, true));
       el.addEventListener('mouseleave', () => highlightStructure(id, false));
-
       el.addEventListener('click', () => {
         if (quizActive) {
           handleQuizAttempt(id);
@@ -147,6 +149,19 @@ document.addEventListener('DOMContentLoaded', () => {
     syncLabelsVisibility();
   });
 
+  // Botón Galería para rotar entre las vistas
+  if (btnGallery) {
+    btnGallery.addEventListener('click', () => {
+      const keys = Object.keys(DENTAL_VIEWS);
+      const nextIndex = (keys.indexOf(currentViewKey) + 1) % keys.length;
+      const nextKey = keys[nextIndex];
+      document.querySelectorAll('.view-thumb').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === nextKey);
+      });
+      loadView(nextKey);
+    });
+  }
+
   // Cambio de vistas (Miniaturas abajo a la izquierda)
   document.querySelectorAll('.view-thumb').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -166,9 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ================= PIZARRA DE DIBUJO =================
-  const canvas = document.getElementById('drawing-board');
-  const ctx = canvas.getContext('2d');
+  // ================= PIZARRA DE DIBUJO (Soporte Mouse + Touch) =================
   const btnDrawToggle = document.getElementById('btn-draw-toggle');
   const btnClearBoard = document.getElementById('btn-clear-board');
   const drawColorInput = document.getElementById('draw-color');
@@ -194,14 +207,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   });
 
-  canvas.addEventListener('mousedown', e => {
+  canvas.addEventListener('pointerdown', e => {
     if (!drawingEnabled) return;
     isPainting = true;
     ctx.beginPath();
     ctx.moveTo(e.offsetX, e.offsetY);
   });
 
-  canvas.addEventListener('mousemove', e => {
+  canvas.addEventListener('pointermove', e => {
     if (!drawingEnabled || !isPainting) return;
     ctx.strokeStyle = drawColorInput.value;
     ctx.lineWidth = drawSizeInput.value;
@@ -210,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.stroke();
   });
 
-  window.addEventListener('mouseup', () => {
+  window.addEventListener('pointerup', () => {
     isPainting = false;
   });
 
@@ -231,7 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function nextQuizQuestion() {
-    const structures = DENTAL_VIEWS[currentViewKey].structures;
+    const nonBlockingIds = ['diente', 'corona', 'raiz'];
+    const structures = DENTAL_VIEWS[currentViewKey].structures.filter(
+      s => !nonBlockingIds.includes(s.id)
+    );
     quizTarget = structures[Math.floor(Math.random() * structures.length)];
     quizPrompt.innerHTML = `Selecciona en el diente: <strong>${quizTarget.name}</strong>`;
     quizScore.textContent = `Aciertos: ${quizHits}/${quizTotal}`;
